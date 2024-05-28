@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     while (!glfwWindowShouldClose(window))
     {
         TimeUtils::currentTime += DT;  // 更新全局时间
-        std::cout << "Main loop time: " << TimeUtils::getCurrentTime() << std::endl;
+        // std::cout << "Main loop time: " << TimeUtils::getCurrentTime() << std::endl;
 
         simulator->update();
         scene.update();  // 确保 Scene2D 的 update 方法被调用

@@ -21,7 +21,7 @@ void Scene2D::update()
 {
     // 更新场景状态，增加时间变量
     m_time += DT;
-    std::cout << "Scene2D time: " << m_time << std::endl;  // 打印时间增量
+    // std::cout << "Scene2D time: " << m_time << std::endl;  // 打印时间增量
 }
 
 void Scene2D::draw()
