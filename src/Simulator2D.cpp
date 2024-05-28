@@ -267,20 +267,51 @@ void Simulator2D::advectDensity()
 
 float Simulator2D::interp(float x, float y, float q[], unsigned int Nx, unsigned int Ny)
 {
-    x = std::fmax(0.0, std::fmin(Nx - 1 - 1e-6, N * x / (float)WIDTH));
-    y = std::fmax(0.0, std::fmin(Ny - 1 - 1e-6, N * y / (float)HEIGHT));
+    // x = std::fmax(0.0, std::fmin(Nx - 1 - 1e-6, N * x / (float)WIDTH));
+    // y = std::fmax(0.0, std::fmin(Ny - 1 - 1e-6, N * y / (float)HEIGHT));
 
-    unsigned int i = x;
-    unsigned int j = y;
+    // unsigned int i = x;
+    // unsigned int j = y;
 
-    float f[4] = {q[POS(i, j)], q[POS(i, j + 1)], q[POS(i + 1, j)], q[POS(i + 1, j + 1)]};
+    // float f[4] = {q[POS(i, j)], q[POS(i, j + 1)], q[POS(i + 1, j)], q[POS(i + 1, j + 1)]};
 
-    x = x - i;
-    y = y - j;
+    // x = x - i;
+    // y = y - j;
 
-    float c[4] = {(1.0f - x) * (1.0f - y), (1.0f - x) * y, x * (1.0f - y), x * y};
+    // float c[4] = {(1.0f - x) * (1.0f - y), (1.0f - x) * y, x * (1.0f - y), x * y};
 
-    return c[0] * f[0] + c[1] * f[1] + c[2] * f[2] + c[3] * f[3];
+    // return c[0] * f[0] + c[1] * f[1] + c[2] * f[2] + c[3] * f[3];
+    // 确保坐标在有效范围内
+    x = std::fmax(0.0, std::fmin(Nx - 1.01, N * x / float(WIDTH)));
+    y = std::fmax(0.0, std::fmin(Ny - 1.01, N * y / float(HEIGHT)));
+
+    int i = int(x);
+    int j = int(y);
+    float tx = x - i;
+    float ty = y - j;
+
+    // B spline
+    auto B_spline = [](float t) {
+        if (t < 1.0) {
+            return 0.5 * t * t;
+        } else if (t < 2.0) {
+            return -1.0 + (3.0 - t) * t - 0.5 * (2.0 - t) * (2.0 - t);
+        }
+        return 0.0;
+    };
+
+    //interpolate
+    float result = 0.0;
+    for (int dy = -1; dy <= 2; dy++) {
+        for (int dx = -1; dx <= 2; dx++) {
+            int ni = i + dx, nj = j + dy;
+            if (ni >= 0 && ni < Nx && nj >= 0 && nj < Ny) {
+                result += q[POS(ni, nj)] * B_spline(1.0 - abs(tx - dx)) * B_spline(1.0 - abs(ty - dy));
+            }
+        }
+    }
+
+    return result;
 }
 
 void Simulator2D::LBMStep()
