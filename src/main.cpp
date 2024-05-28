@@ -1,7 +1,5 @@
-#define GLFW_INCLUDE_GLU
+#include <iostream>
 #include <GLFW/glfw3.h>
-
-#include "constants.hpp"
 #include "GridCells2D.hpp"
 #include "Scene2D.hpp"
 #include "Simulator2D.hpp"
@@ -78,7 +76,7 @@ void setDensityMode(int argc, char *argv[], EMode *mode)
 {
     if (argc > 2)
     {
-        fprintf(stderr, "too much arguments\n");
+        fprintf(stderr, "too many arguments\n");
         exit(EXIT_FAILURE);
     }
     else if (argc == 2)
@@ -97,14 +95,14 @@ void setDensityMode(int argc, char *argv[], EMode *mode)
                 *mode = E_Continuous;
                 break;
             default:
-                fprintf(stderr, "exceptional argument\n");
+                fprintf(stderr, "invalid argument\n");
                 exit(EXIT_FAILURE);
                 break;
             }
         }
         else
         {
-            fprintf(stderr, "exceptional argument\n");
+            fprintf(stderr, "invalid argument\n");
             exit(EXIT_FAILURE);
         }
     }

@@ -43,6 +43,7 @@ void Simulator2D::update()
 
     velocityStep();
     densityStep();
+    LBMStep();  // 添加LBM步骤
 }
 
 /* callback function */
@@ -190,8 +191,7 @@ void Simulator2D::FFT()
 
 void Simulator2D::diffuse()
 {
-    // damp viscosity and conserve mass
-    // in fourier space
+    // damp viscosity and conserve mass in Fourier space
     for (int j = 0; j < N; ++j)
     {
         float ky = (j <= N / 2) ? j : j - N;
@@ -294,4 +294,42 @@ float Simulator2D::interp(float x, float y, float q[], unsigned int Nx, unsigned
     float c[4] = {(1.0f - x) * (1.0f - y), (1.0f - x) * y, x * (1.0f - y), x * y};
 
     return c[0] * f[0] + c[1] * f[1] + c[2] * f[2] + c[3] * f[3];
+}
+
+// 新增LBM步骤的实现
+void Simulator2D::LBMStep()
+{
+    const double tau = 0.6;  // Relaxation time
+    const double w[9] = {4.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 36, 1.0 / 36, 1.0 / 36, 1.0 / 36};  // Weights for D2Q9
+    const int cx[9] = {0, 1, 0, -1, 0, 1, -1, -1, 1};  // X velocities for D2Q9
+    const int cy[9] = {0, 0, 1, 0, -1, 1, 1, -1, -1};  // Y velocities for D2Q9
+
+    // Collide
+    for (int x = 0; x < N; x++) {
+        for (int y = 0; y < N; y++) {
+            double rho = 0, ux = 0, uy = 0;
+            for (int i = 0; i < 9; i++) {
+                rho += m_grid_cells->f[x][y][i];
+                ux += m_grid_cells->f[x][y][i] * cx[i];
+                uy += m_grid_cells->f[x][y][i] * cy[i];
+            }
+            ux /= rho; uy /= rho;
+            for (int i = 0; i < 9; i++) {
+                double cu = 3 * (cx[i] * ux + cy[i] * uy);
+                m_grid_cells->feq[x][y][i] = rho * w[i] * (1 + cu + 0.5 * cu * cu - 1.5 * (ux * ux + uy * uy));
+                m_grid_cells->ftemp[x][y][i] = m_grid_cells->f[x][y][i] - (m_grid_cells->f[x][y][i] - m_grid_cells->feq[x][y][i]) / tau;
+            }
+        }
+    }
+
+    // Stream
+    for (int x = 0; x < N; x++) {
+        for (int y = 0; y < N; y++) {
+            for (int i = 0; i < 9; i++) {
+                int nx = (x + cx[i] + N) % N;
+                int ny = (y + cy[i] + N) % N;
+                m_grid_cells->f[nx][ny][i] = m_grid_cells->ftemp[x][y][i];
+            }
+        }
+    }
 }

@@ -3,10 +3,8 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
-
 #include <GL/gl.h>
 #include <glm/glm.hpp>
-
 #include "Scene2D.hpp"
 #include "constants.hpp"
 
@@ -21,6 +19,7 @@ Scene2D::~Scene2D()
 
 void Scene2D::update()
 {
+    // 更新场景状态，这里可以添加对 LBM 数据的更新处理
 }
 
 void Scene2D::draw()
