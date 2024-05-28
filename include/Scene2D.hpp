@@ -13,6 +13,7 @@ public:
     void update();
     void draw();
     void writeData();
+    float getTime() const { return m_time; }  // 新增：获取时间的函数
 
 private:
     void drawGrid();
@@ -22,4 +23,5 @@ private:
 
     int m_file_num;
     GridCells2D *m_grid_cells;
+    float m_time;  // 时间变量
 };

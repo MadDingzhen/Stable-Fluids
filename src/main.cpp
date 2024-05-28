@@ -3,6 +3,7 @@
 #include "GridCells2D.hpp"
 #include "Scene2D.hpp"
 #include "Simulator2D.hpp"
+#include "time_utils.hpp"  // 引入全局时间工具
 
 void setDensityMode(int argc, char *argv[], EMode *mode);
 
@@ -12,7 +13,6 @@ int main(int argc, char *argv[])
     EMode mode = E_Continuous;
     setDensityMode(argc, argv, &mode);
 
-    float time = 0.0f;
     GridCells2D *grid_cell = new GridCells2D();
     Scene2D scene(grid_cell);
     Simulator2D *simulator = new Simulator2D(grid_cell, mode);
@@ -47,9 +47,11 @@ int main(int argc, char *argv[])
 
     while (!glfwWindowShouldClose(window))
     {
-        time += DT;
+        TimeUtils::currentTime += DT;  // 更新全局时间
+        std::cout << "Main loop time: " << TimeUtils::getCurrentTime() << std::endl;
 
         simulator->update();
+        scene.update();  // 确保 Scene2D 的 update 方法被调用
         scene.draw();
 
         // swap draw buffer

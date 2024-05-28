@@ -7,6 +7,12 @@ GridCells2D::GridCells2D()
       ftemp(N, std::vector<std::vector<double>>(N, std::vector<double>(9)))
 {
     initializeLBM(N, N);
+    for (int i = 0; i < SIZE; ++i)
+    {
+        initialColor[i][0] = 0.0f;
+        initialColor[i][1] = 0.0f;
+        initialColor[i][2] = 1.0f;  // 初始颜色设为蓝色
+    }
 }
 
 void GridCells2D::initializeLBM(int nx, int ny)

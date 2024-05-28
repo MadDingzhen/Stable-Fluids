@@ -18,7 +18,7 @@ public:
 private:
     void velocityStep();
     void densityStep();
-    void LBMStep(); // 新增LBM步骤
+    void LBMStep();  // 新增LBM步骤
 
     void addForce();
     void advect();
@@ -47,4 +47,6 @@ private:
     static bool m_is_dragging;
     static glm::ivec2 m_new_pos;
     static glm::ivec2 m_old_pos;
+
+    void setNewSmokeColor(int pos);  // 新增：记录新烟雾的颜色
 };

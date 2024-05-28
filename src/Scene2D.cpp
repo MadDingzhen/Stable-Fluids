@@ -8,7 +8,7 @@
 #include "Scene2D.hpp"
 #include "constants.hpp"
 
-Scene2D::Scene2D(GridCells2D *grid_cells) : m_grid_cells(nullptr), m_file_num(0)
+Scene2D::Scene2D(GridCells2D *grid_cells) : m_grid_cells(nullptr), m_file_num(0), m_time(0.0f)
 {
     m_grid_cells = grid_cells;
 }
@@ -19,7 +19,9 @@ Scene2D::~Scene2D()
 
 void Scene2D::update()
 {
-    // 更新场景状态，这里可以添加对 LBM 数据的更新处理
+    // 更新场景状态，增加时间变量
+    m_time += DT;
+    std::cout << "Scene2D time: " << m_time << std::endl;  // 打印时间增量
 }
 
 void Scene2D::draw()
@@ -83,15 +85,33 @@ void Scene2D::drawVelocity()
 
 void Scene2D::drawDensity()
 {
+    float colorChangeSpeed = 0.1f;  // 控制颜色变化的速度
     for (unsigned int y = 0; y < N; ++y)
     {
         for (unsigned int x = 0; x < N; ++x)
         {
-            glColor4d(1.0f, 1.0f, 1.0f, m_grid_cells->dens[POS(x, y)]);
+            int pos = POS(x, y);
+            // 获取初始颜色
+            float initialR = m_grid_cells->initialColor[pos][0];
+            float initialG = m_grid_cells->initialColor[pos][1];
+            float initialB = m_grid_cells->initialColor[pos][2];
+
+            // 根据时间变化来调整颜色
+            float r = (sin(m_time * colorChangeSpeed) + 1.0f) / 2.0f;
+            float g = (cos(m_time * colorChangeSpeed) + 1.0f) / 2.0f;
+            float b = (sin(m_time * colorChangeSpeed + 3.14f / 2) + 1.0f) / 2.0f;
+
+            // 混合初始颜色和当前颜色
+            float mixedR = initialR * (1.0f - m_grid_cells->dens[pos]) + r * m_grid_cells->dens[pos];
+            float mixedG = initialG * (1.0f - m_grid_cells->dens[pos]) + g * m_grid_cells->dens[pos];
+            float mixedB = initialB * (1.0f - m_grid_cells->dens[pos]) + b * m_grid_cells->dens[pos];
+
+            glColor4f(mixedR, mixedG, mixedB, m_grid_cells->dens[pos]);
             glRectf(x * WIDTH / (float)N, y * HEIGHT / (float)N, (x + 1) * WIDTH / (float)N, (y + 1) * HEIGHT / (float)N);
         }
     }
 }
+
 
 void Scene2D::writeData()
 {

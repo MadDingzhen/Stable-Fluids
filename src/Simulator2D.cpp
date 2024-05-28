@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include "Simulator2D.hpp"
+#include "time_utils.hpp"
 
 GridCells2D *Simulator2D::m_grid_cells;
 bool Simulator2D::m_is_dragging;
@@ -43,10 +44,31 @@ void Simulator2D::update()
 
     velocityStep();
     densityStep();
-    LBMStep();  // 添加LBM步骤
+    LBMStep();
 }
 
-/* callback function */
+void Simulator2D::densityStep()
+{
+    if (m_mode == E_Continuous)
+    {
+        addSource();
+    }
+    resetForce();
+    advectDensity();
+}
+
+void Simulator2D::resetForce()
+{
+    for (int j = 0; j < N; ++j)
+    {
+        for (int i = 0; i < N; ++i)
+        {
+            m_grid_cells->fx[POS(i, j)] = 0.0f;
+            m_grid_cells->fy[POS(i, j)] = GRAVITY_Y;
+        }
+    }
+}
+
 void Simulator2D::mouseEvent(GLFWwindow *window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT)
@@ -114,7 +136,6 @@ void Simulator2D::mouseMoveEvent(GLFWwindow *window, double xpos, double ypos)
     }
 }
 
-/* private */
 void Simulator2D::velocityStep()
 {
     addForce();
@@ -122,16 +143,6 @@ void Simulator2D::velocityStep()
     FFT();
     diffuse();
     IFFT();
-}
-
-void Simulator2D::densityStep()
-{
-    if (m_mode == E_Continuous)
-    {
-        addSource();
-    }
-    resetForce();
-    advectDensity();
 }
 
 void Simulator2D::addForce()
@@ -237,30 +248,6 @@ void Simulator2D::IFFT()
     }
 }
 
-void Simulator2D::addSource()
-{
-    for (int j = N / 2 - SOURCE_SIZE / 2; j < N / 2 + SOURCE_SIZE / 2; ++j)
-    {
-        // initialize smoke
-        for (int i = N / 2 - SOURCE_SIZE / 2; i < N / 2 + SOURCE_SIZE / 2; ++i)
-        {
-            m_grid_cells->dens[POS(i, j)] = 1.0f;
-        }
-    }
-}
-
-void Simulator2D::resetForce()
-{
-    for (int j = 0; j < N; ++j)
-    {
-        for (int i = 0; i < N; ++i)
-        {
-            m_grid_cells->fx[POS(i, j)] = 0.0f;
-            m_grid_cells->fy[POS(i, j)] = GRAVITY_Y;
-        }
-    }
-}
-
 void Simulator2D::advectDensity()
 {
     for (unsigned int j = 0; j < N; ++j)
@@ -296,7 +283,6 @@ float Simulator2D::interp(float x, float y, float q[], unsigned int Nx, unsigned
     return c[0] * f[0] + c[1] * f[1] + c[2] * f[2] + c[3] * f[3];
 }
 
-// 新增LBM步骤的实现
 void Simulator2D::LBMStep()
 {
     const double tau = 0.6;  // Relaxation time
@@ -330,6 +316,31 @@ void Simulator2D::LBMStep()
                 int ny = (y + cy[i] + N) % N;
                 m_grid_cells->f[nx][ny][i] = m_grid_cells->ftemp[x][y][i];
             }
+        }
+    }
+}
+
+void Simulator2D::setNewSmokeColor(int pos)
+{
+    float time = TimeUtils::getCurrentTime();
+    float r = (sin(time * 0.1f) + 1.0f) / 2.0f;
+    float g = (cos(time * 0.1f) + 1.0f) / 2.0f;
+    float b = (sin(time * 0.1f + 3.14f / 2) + 1.0f) / 2.0f;
+
+    m_grid_cells->initialColor[pos][0] = r;
+    m_grid_cells->initialColor[pos][1] = g;
+    m_grid_cells->initialColor[pos][2] = b;
+}
+
+void Simulator2D::addSource()
+{
+    for (int j = N / 2 - SOURCE_SIZE / 2; j < N / 2 + SOURCE_SIZE / 2; ++j)
+    {
+        // initialize smoke
+        for (int i = N / 2 - SOURCE_SIZE / 2; i < N / 2 + SOURCE_SIZE / 2; ++i)
+        {
+            m_grid_cells->dens[POS(i, j)] = 1.0f;
+            setNewSmokeColor(POS(i, j));
         }
     }
 }
