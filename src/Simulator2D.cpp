@@ -8,6 +8,7 @@ bool Simulator2D::m_is_dragging;
 glm::ivec2 Simulator2D::m_new_pos;
 glm::ivec2 Simulator2D::m_old_pos;
 
+// 构造函数，初始化成员变量和 FFT 计划
 Simulator2D::Simulator2D(GridCells2D *grid_cells, EMode mode) : m_is_pause(false), m_mode(mode)
 {
     m_grid_cells = grid_cells;
@@ -15,7 +16,6 @@ Simulator2D::Simulator2D(GridCells2D *grid_cells, EMode mode) : m_is_pause(false
     m_fft_V = (fftwf_complex *)fftwf_malloc(sizeof(fftwf_complex) * N * N);
     m_plan_u_rc = fftwf_plan_dft_r2c_2d(N, N, m_grid_cells->u0, m_fft_U, FFTW_MEASURE);
     m_plan_v_rc = fftwf_plan_dft_r2c_2d(N, N, m_grid_cells->v0, m_fft_V, FFTW_MEASURE);
-
     m_plan_u_cr = fftwf_plan_dft_c2r_2d(N, N, m_fft_U, m_grid_cells->u0, FFTW_MEASURE);
     m_plan_v_cr = fftwf_plan_dft_c2r_2d(N, N, m_fft_V, m_grid_cells->v0, FFTW_MEASURE);
 
@@ -25,6 +25,7 @@ Simulator2D::Simulator2D(GridCells2D *grid_cells, EMode mode) : m_is_pause(false
     }
 }
 
+// 析构函数，销毁 FFT 计划并释放内存
 Simulator2D::~Simulator2D()
 {
     fftwf_destroy_plan(m_plan_u_rc);
@@ -35,6 +36,7 @@ Simulator2D::~Simulator2D()
     fftwf_free(m_fft_V);
 }
 
+// 更新函数，调用速度和密度步骤以及 LBM 步骤
 void Simulator2D::update()
 {
     if (m_is_pause || !m_grid_cells)
@@ -47,6 +49,7 @@ void Simulator2D::update()
     LBMStep();
 }
 
+// 密度步骤，添加源项并重置力场
 void Simulator2D::densityStep()
 {
     if (m_mode == E_Continuous)
@@ -57,6 +60,7 @@ void Simulator2D::densityStep()
     advectDensity();
 }
 
+// 重置力场
 void Simulator2D::resetForce()
 {
     for (int j = 0; j < N; ++j)
@@ -69,6 +73,7 @@ void Simulator2D::resetForce()
     }
 }
 
+// 鼠标事件回调函数
 void Simulator2D::mouseEvent(GLFWwindow *window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT)
@@ -92,14 +97,15 @@ void Simulator2D::mouseEvent(GLFWwindow *window, int button, int action, int mod
     }
 }
 
+// 鼠标移动事件回调函数
 void Simulator2D::mouseMoveEvent(GLFWwindow *window, double xpos, double ypos)
 {
     if (m_is_dragging)
     {
-        // update mouse position
+        // 更新鼠标位置
         m_new_pos = glm::ivec2(xpos, ypos);
 
-        // ignore slight movement
+        // 忽略轻微移动
         float dx = m_new_pos.x - m_old_pos.x;
         float dy = m_new_pos.y - m_old_pos.y;
         float length = dx * dx + dy * dy;
@@ -112,20 +118,20 @@ void Simulator2D::mouseMoveEvent(GLFWwindow *window, double xpos, double ypos)
             float tmp_fx, tmp_fy;
             unsigned int i, j;
 
-            // calculate force
+            // 计算力
             tmp_fx = INTERACTION * N * (m_new_pos.x - m_old_pos.x) / (float)WIDTH;
             tmp_fy = INTERACTION * N * (m_new_pos.y - m_old_pos.y) / (float)HEIGHT;
 
-            // specify the index to add force
+            // 指定添加力的索引
             i = std::fmax(0.0, std::fmin(N - 1, N * m_new_pos.x / (float)WIDTH));
             j = std::fmax(0.0, std::fmin(N - 1, N * m_new_pos.y / (float)HEIGHT));
             if (i > 0 && j > 0 && i < N - 1 && j < N - 1)
-            { // avoid edge of grid
-                // calculate weight
+            { // 避免网格边缘
+                // 计算权重
                 float wx = N * m_new_pos.x / (float)WIDTH - i;
                 float wy = N * m_new_pos.y / (float)HEIGHT - j;
 
-                // add force
+                // 添加力
                 m_grid_cells->fx[POS(i, j)] = (1.0 - wx) * tmp_fx;
                 m_grid_cells->fx[POS(i + 1, j)] = wx * tmp_fx;
                 m_grid_cells->fy[POS(i, j)] = (1.0 - wy) * tmp_fy;
@@ -136,6 +142,7 @@ void Simulator2D::mouseMoveEvent(GLFWwindow *window, double xpos, double ypos)
     }
 }
 
+// 速度步骤，包括添加力、平流、FFT、扩散和IFFT
 void Simulator2D::velocityStep()
 {
     addForce();
@@ -145,6 +152,7 @@ void Simulator2D::velocityStep()
     IFFT();
 }
 
+// 添加力到速度场
 void Simulator2D::addForce()
 {
     for (int i = 0; i < SIZE; ++i)
@@ -157,6 +165,7 @@ void Simulator2D::addForce()
     }
 }
 
+// 平流速度场
 void Simulator2D::advect()
 {
     for (unsigned int j = 0; j < N; ++j)
@@ -188,6 +197,7 @@ void Simulator2D::advect()
     }
 }
 
+// FFT 计算
 void Simulator2D::FFT()
 {
     for (int i = 0; i < SIZE; ++i)
@@ -200,9 +210,9 @@ void Simulator2D::FFT()
     fftwf_execute(m_plan_v_rc);
 }
 
+// 扩散步骤，在傅里叶空间中进行
 void Simulator2D::diffuse()
 {
-    // damp viscosity and conserve mass in Fourier space
     for (int j = 0; j < N; ++j)
     {
         float ky = (j <= N / 2) ? j : j - N;
@@ -231,12 +241,13 @@ void Simulator2D::diffuse()
     }
 }
 
+// IFFT 计算
 void Simulator2D::IFFT()
 {
     fftwf_execute(m_plan_u_cr);
     fftwf_execute(m_plan_v_cr);
 
-    // normalize
+    // 归一化
     float f = 1.0 / (float)(N * N);
     for (int j = 0; j < N; ++j)
     {
@@ -248,6 +259,7 @@ void Simulator2D::IFFT()
     }
 }
 
+// 平流密度场
 void Simulator2D::advectDensity()
 {
     for (unsigned int j = 0; j < N; ++j)
@@ -265,63 +277,34 @@ void Simulator2D::advectDensity()
     }
 }
 
+// 插值函数
 float Simulator2D::interp(float x, float y, float q[], unsigned int Nx, unsigned int Ny)
 {
-    // x = std::fmax(0.0, std::fmin(Nx - 1 - 1e-6, N * x / (float)WIDTH));
-    // y = std::fmax(0.0, std::fmin(Ny - 1 - 1e-6, N * y / (float)HEIGHT));
+    x = std::fmax(0.0, std::fmin(Nx - 1 - 1e-6, N * x / (float)WIDTH));
+    y = std::fmax(0.0, std::fmin(Ny - 1 - 1e-6, N * y / (float)HEIGHT));
 
-    // unsigned int i = x;
-    // unsigned int j = y;
+    unsigned int i = x;
+    unsigned int j = y;
 
-    // float f[4] = {q[POS(i, j)], q[POS(i, j + 1)], q[POS(i + 1, j)], q[POS(i + 1, j + 1)]};
+    float f[4] = {q[POS(i, j)], q[POS(i, j + 1)], q[POS(i + 1, j)], q[POS(i + 1, j + 1)]};
 
-    // x = x - i;
-    // y = y - j;
+    x = x - i;
+    y = y - j;
 
-    // float c[4] = {(1.0f - x) * (1.0f - y), (1.0f - x) * y, x * (1.0f - y), x * y};
+    float c[4] = {(1.0f - x) * (1.0f - y), (1.0f - x) * y, x * (1.0f - y), x * y};
 
-    // return c[0] * f[0] + c[1] * f[1] + c[2] * f[2] + c[3] * f[3];
-    // 确保坐标在有效范围内
-    x = std::fmax(0.0, std::fmin(Nx - 1.01, N * x / float(WIDTH)));
-    y = std::fmax(0.0, std::fmin(Ny - 1.01, N * y / float(HEIGHT)));
-
-    int i = int(x);
-    int j = int(y);
-    float tx = x - i;
-    float ty = y - j;
-
-    // B spline
-    auto B_spline = [](float t) {
-        if (t < 1.0) {
-            return 0.5 * t * t;
-        } else if (t < 2.0) {
-            return -1.0 + (3.0 - t) * t - 0.5 * (2.0 - t) * (2.0 - t);
-        }
-        return 0.0;
-    };
-
-    //interpolate
-    float result = 0.0;
-    for (int dy = -1; dy <= 2; dy++) {
-        for (int dx = -1; dx <= 2; dx++) {
-            int ni = i + dx, nj = j + dy;
-            if (ni >= 0 && ni < Nx && nj >= 0 && nj < Ny) {
-                result += q[POS(ni, nj)] * B_spline(1.0 - abs(tx - dx)) * B_spline(1.0 - abs(ty - dy));
-            }
-        }
-    }
-
-    return result;
+    return c[0] * f[0] + c[1] * f[1] + c[2] * f[2] + c[3] * f[3];
 }
 
+// LBM 步骤，包括碰撞和流动
 void Simulator2D::LBMStep()
 {
-    const double tau = 0.6;  // Relaxation time
-    const double w[9] = {4.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 36, 1.0 / 36, 1.0 / 36, 1.0 / 36};  // Weights for D2Q9
-    const int cx[9] = {0, 1, 0, -1, 0, 1, -1, -1, 1};  // X velocities for D2Q9
-    const int cy[9] = {0, 0, 1, 0, -1, 1, 1, -1, -1};  // Y velocities for D2Q9
+    const double tau = 0.6;  // 松弛时间
+    const double w[9] = {4.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 9, 1.0 / 36, 1.0 / 36, 1.0 / 36, 1.0 / 36};  // D2Q9 模型的权重
+    const int cx[9] = {0, 1, 0, -1, 0, 1, -1, -1, 1};  // D2Q9 模型的 X 方向速度
+    const int cy[9] = {0, 0, 1, 0, -1, 1, 1, -1, -1};  // D2Q9 模型的 Y 方向速度
 
-    // Collide
+    // 碰撞步骤
     for (int x = 0; x < N; x++) {
         for (int y = 0; y < N; y++) {
             double rho = 0, ux = 0, uy = 0;
@@ -339,7 +322,7 @@ void Simulator2D::LBMStep()
         }
     }
 
-    // Stream
+    // 流动步骤
     for (int x = 0; x < N; x++) {
         for (int y = 0; y < N; y++) {
             for (int i = 0; i < 9; i++) {
@@ -351,6 +334,7 @@ void Simulator2D::LBMStep()
     }
 }
 
+// 设置新烟雾的颜色
 void Simulator2D::setNewSmokeColor(int pos)
 {
     float time = TimeUtils::getCurrentTime();
@@ -363,11 +347,12 @@ void Simulator2D::setNewSmokeColor(int pos)
     m_grid_cells->initialColor[pos][2] = b;
 }
 
+// 添加烟雾源
 void Simulator2D::addSource()
 {
     for (int j = N / 2 - SOURCE_SIZE / 2; j < N / 2 + SOURCE_SIZE / 2; ++j)
     {
-        // initialize smoke
+        // 初始化烟雾
         for (int i = N / 2 - SOURCE_SIZE / 2; i < N / 2 + SOURCE_SIZE / 2; ++i)
         {
             m_grid_cells->dens[POS(i, j)] = 1.0f;

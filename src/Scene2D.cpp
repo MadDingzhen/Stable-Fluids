@@ -8,22 +8,25 @@
 #include "Scene2D.hpp"
 #include "constants.hpp"
 
+// 构造函数，初始化成员变量
 Scene2D::Scene2D(GridCells2D *grid_cells) : m_grid_cells(nullptr), m_file_num(0), m_time(0.0f)
 {
     m_grid_cells = grid_cells;
 }
 
+// 析构函数
 Scene2D::~Scene2D()
 {
 }
 
+// 更新场景状态，增加时间变量
 void Scene2D::update()
 {
-    // 更新场景状态，增加时间变量
     m_time += DT;
     // std::cout << "Scene2D time: " << m_time << std::endl;  // 打印时间增量
 }
 
+// 绘制场景
 void Scene2D::draw()
 {
     glClear(GL_COLOR_BUFFER_BIT);
@@ -48,7 +51,7 @@ void Scene2D::draw()
     drawVelocity();
 }
 
-/* private */
+// 绘制网格
 void Scene2D::drawGrid()
 {
     glBegin(GL_LINES);
@@ -65,6 +68,7 @@ void Scene2D::drawGrid()
     glEnd();
 }
 
+// 绘制速度场
 void Scene2D::drawVelocity()
 {
     glBegin(GL_LINES);
@@ -83,6 +87,7 @@ void Scene2D::drawVelocity()
     glEnd();
 }
 
+// 绘制密度场
 void Scene2D::drawDensity()
 {
     float colorChangeSpeed = 0.1f;  // 控制颜色变化的速度
@@ -112,13 +117,14 @@ void Scene2D::drawDensity()
     }
 }
 
-
+// 写入数据
 void Scene2D::writeData()
 {
     writeData_inVtiFormat();
     ++m_file_num;
 }
 
+// 以 VTI 格式写入数据
 void Scene2D::writeData_inVtiFormat()
 {
     std::ostringstream sout;
@@ -134,13 +140,14 @@ void Scene2D::writeData_inVtiFormat()
         exit(EXIT_FAILURE);
     }
 
-    /* header */
+    // 写入头部信息
     ofs << "<?xml version='1.0' encoding='UTF-8'?>" << std::endl;
     ofs << "<VTKFile xmlns='VTK' byte_order='LittleEndian' version='0.1' type='ImageData'>" << std::endl;
     ofs << "<ImageData WholeExtent='0 " << N - 1 << " 0 " << N - 1 << " 0 0' Origin='0 0 0' Spacing='1.0 1.0 1.0'>" << std::endl;
     ofs << "<Piece Extent='0 " << N - 1 << " 0 " << N - 1 << " 0 0'>" << std::endl;
     ofs << "<PointData Scalars='density' Vectors='velocity'>" << std::endl;
 
+    // 写入密度数据
     ofs << "<DataArray type='Float32' Name='density' NumberOfComponents='1' format='ascii'>" << std::endl;
     for (int j = 0; j < N; ++j)
     {
@@ -152,8 +159,8 @@ void Scene2D::writeData_inVtiFormat()
     }
     ofs << "</DataArray>" << std::endl;
 
+    // 写入速度数据
     ofs << "<DataArray type='Float32' Name='velocity' NumberOfComponents='3' format='ascii'>" << std::endl;
-
     for (int j = 0; j < N; ++j)
     {
         for (int i = 0; i < N; ++i)

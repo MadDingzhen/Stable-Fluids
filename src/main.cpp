@@ -5,26 +5,28 @@
 #include "Simulator2D.hpp"
 #include "time_utils.hpp"  // 引入全局时间工具
 
+// 设置密度模式的函数声明
 void setDensityMode(int argc, char *argv[], EMode *mode);
 
 int main(int argc, char *argv[])
 {
-    // set default density mode
+    // 设置默认密度模式
     EMode mode = E_Continuous;
     setDensityMode(argc, argv, &mode);
 
+    // 创建网格单元、场景和模拟器对象
     GridCells2D *grid_cell = new GridCells2D();
     Scene2D scene(grid_cell);
     Simulator2D *simulator = new Simulator2D(grid_cell, mode);
 
-    // initialize OpenGL
+    // 初始化 OpenGL
     if (!glfwInit())
     {
         fprintf(stderr, "Initialization failed!\n");
         exit(EXIT_FAILURE);
     }
 
-    // Create Window
+    // 创建窗口
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, nullptr, nullptr);
 
     if (!window)
@@ -36,11 +38,11 @@ int main(int argc, char *argv[])
 
     glfwMakeContextCurrent(window);
 
-    // register event callback function
+    // 注册事件回调函数
     glfwSetMouseButtonCallback(window, simulator->mouseEvent);
     glfwSetCursorPosCallback(window, simulator->mouseMoveEvent);
 
-    // initialize scene
+    // 初始化场景
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     std::cout << "\n*** START SIMULATION ***\n";
@@ -54,13 +56,14 @@ int main(int argc, char *argv[])
         scene.update();  // 确保 Scene2D 的 update 方法被调用
         scene.draw();
 
-        // swap draw buffer
+        // 交换绘图缓冲区
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     std::cout << "*** END ***\n\n";
 
+    // 清理资源
     if (simulator)
     {
         delete simulator;
@@ -74,6 +77,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+// 设置密度模式的函数实现
 void setDensityMode(int argc, char *argv[], EMode *mode)
 {
     if (argc > 2)
@@ -87,7 +91,7 @@ void setDensityMode(int argc, char *argv[], EMode *mode)
         if (*p == '-')
         {
             p++;
-            // set density mode
+            // 设置密度模式
             switch (*p)
             {
             case 'o':
