@@ -3,13 +3,13 @@
 #include "GridCells2D.hpp"
 #include "Scene2D.hpp"
 #include "Simulator2D.hpp"
-#include "time_utils.hpp"  // 引入全局时间工具
+#include "time_utils.hpp"
+#include "performance_monitor.hpp"
 
 void setDensityMode(int argc, char *argv[], EMode *mode);
 
 int main(int argc, char *argv[])
 {
-    // set default density mode
     EMode mode = E_Continuous;
     setDensityMode(argc, argv, &mode);
 
@@ -17,14 +17,12 @@ int main(int argc, char *argv[])
     Scene2D scene(grid_cell);
     Simulator2D *simulator = new Simulator2D(grid_cell, mode);
 
-    // initialize OpenGL
     if (!glfwInit())
     {
         fprintf(stderr, "Initialization failed!\n");
         exit(EXIT_FAILURE);
     }
 
-    // Create Window
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, nullptr, nullptr);
 
     if (!window)
@@ -35,40 +33,32 @@ int main(int argc, char *argv[])
     }
 
     glfwMakeContextCurrent(window);
-
-    // register event callback function
     glfwSetMouseButtonCallback(window, simulator->mouseEvent);
     glfwSetCursorPosCallback(window, simulator->mouseMoveEvent);
 
-    // initialize scene
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     std::cout << "\n*** START SIMULATION ***\n";
 
+    perf_monitor.start();
     while (!glfwWindowShouldClose(window))
     {
-        TimeUtils::currentTime += DT;  // 更新全局时间
-        // std::cout << "Main loop time: " << TimeUtils::getCurrentTime() << std::endl;
-
+        TimeUtils::currentTime += DT;
         simulator->update();
-        scene.update();  // 确保 Scene2D 的 update 方法被调用
+        scene.update();
         scene.draw();
 
-        // swap draw buffer
+        perf_monitor.logFrame();  // 记录每一帧的性能数据
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    perf_monitor.stop();
 
     std::cout << "*** END ***\n\n";
 
-    if (simulator)
-    {
-        delete simulator;
-    }
-    if (grid_cell)
-    {
-        delete grid_cell;
-    }
+    if (simulator) delete simulator;
+    if (grid_cell) delete grid_cell;
 
     glfwTerminate();
     return 0;
@@ -87,7 +77,6 @@ void setDensityMode(int argc, char *argv[], EMode *mode)
         if (*p == '-')
         {
             p++;
-            // set density mode
             switch (*p)
             {
             case 'o':
