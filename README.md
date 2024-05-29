@@ -13,6 +13,13 @@ Libraries you need are
 - GLEW
 - GLFW
 
+You can install the required libraries by running the following command.
+
+```shell
+$ sudo apt-get update && sudo apt-get install libxi-dev libxinerama-dev libxcursor-dev libglm-dev libglfw3-dev libfftw3-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
+```
+
+
 You can build and execute following command.
 
 ```shell
